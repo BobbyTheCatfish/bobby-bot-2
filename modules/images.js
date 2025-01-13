@@ -29,21 +29,31 @@ const Module = new Augur.Module();
  * @returns {Promise<Jimp|null>} image url
  */
 async function targetImg(int, size = 256) {
-  if (int.options.getAttachment('file')) {
-    const url = int.options.getAttachment('file')?.url;
-    if (!url) return null;
-    const img = await Jimp.read(url).catch(u.noop);
+  const file = int.options.getAttachment("file")?.url;
+  if (file) {
+    const img = await Jimp.read(file).catch(u.noop);
     if (!img) return null;
     return img;
   }
-  const target = (int.options[int.inGuild() ? "getMember" : "getUser"]('user')) ?? int.member ?? int.user;
-  if ("displayAvatarURL" in target) return Jimp.read(target.displayAvatarURL({ extension: 'png', size, forceStatic: true }));
-  return null;
+  let target;
+  if (int.inCachedGuild()) target = int.options.getMember("user") ?? int.member;
+  else target = int.options.getUser("user") ?? int.user;
+
+  return Jimp.read(target.displayAvatarURL({ extension: 'png', size, forceStatic: true }));
+}
+
+/**
+ * @param {Discord.ChatInputCommandInteraction} int
+ * @param {Buffer | string} img
+ */
+async function sendImg(int, img, format = "png") {
+  const attachment = new Discord.AttachmentBuilder(img, { name: `image.${format}` });
+  return int.editReply({ files: [attachment] });
 }
 
 /**
  * Apply a filter function with parameters. Useful for when there isn't much logic to it
- * @param {Discord.CommandInteraction} int
+ * @param {Discord.ChatInputCommandInteraction} int
  * @param {Jimp} img
  * @param {string} filter filter to apply
  * @param {any[]} [params] array of params to pass into the filter function
@@ -52,7 +62,7 @@ async function basicFilter(int, img, filter, params) {
   if (params) img[filter](...params);
   else img[filter]();
   const output = await img.getBufferAsync(Jimp.MIME_PNG);
-  return int.editReply({ files: [output] });
+  return sendImg(int, output);
 }
 
 /** @type {filterFunction} */
@@ -65,7 +75,7 @@ async function amongus(int, img) {
   const output = await base.blit(img, 0, 0)
     .blit(helmet, 0, 0)
     .getBufferAsync(Jimp.MIME_PNG);
-  await int.editReply({ files: [output] });
+  return sendImg(int, output);
 }
 
 /** @type {filterFunction} */
@@ -83,7 +93,7 @@ async function spin(int, img) {
     i++;
   } while (i < (360 / deg));
   const result = await GifCodec.prototype.encodeGif(gifFrames, { loops: 0 });
-  return int.editReply({ files: [{ attachment: result.buffer, name: 'output.gif' }] });
+  return sendImg(int, result.buffer, "gif");
 }
 
 /** @type {filterFunction} */
@@ -92,7 +102,7 @@ async function deepfry(int, img) {
     .color([{ apply: ColorActionName.SATURATE, params: [100] }])
     .contrast(1)
     .getBufferAsync(Jimp.MIME_PNG);
-  return int.editReply({ files: [output] });
+  return sendImg(int, output);
 }
 
 /**
@@ -112,7 +122,7 @@ async function handStuff(int, img, hand, doFlips = false) {
     .blit(right, 248, 4)
     .blit(img, 120, 0)
     .getBufferAsync(Jimp.MIME_PNG);
-  return int.editReply({ files: [output] });
+  return sendImg(int, output);
 }
 
 /** @type {filterFunction} */
@@ -131,17 +141,17 @@ async function personal(int, img) {
   img.resize(350, 350);
   if (!img.hasAlpha()) img.circle();
   const output = await canvas.blit(img, 1050, 75).getBufferAsync(Jimp.MIME_PNG);
-  return await int.editReply({ files: [output] });
+  return sendImg(int, output);
 }
 
 /** @param {Discord.ChatInputCommandInteraction} int */
 async function avatar(int) {
-  const targetUser = (int.options[int.guild ? "getMember" : "getUser"]('user')) ?? int.member ?? int.user;
-  const targetImage = ("displayAvatarURL" in targetUser ? targetUser : int.user).displayAvatarURL();
+  let targetUser;
+  if (int.inCachedGuild()) targetUser = int.options.getMember("user") ?? int.member;
+  else targetUser = int.options.getUser("user") ?? int.user;
+  const targetImage = targetUser.displayAvatarURL({ size: 512, forceStatic: false });
   const format = targetImage.includes('.gif') ? 'gif' : 'png';
-  const name = "displayName" in targetUser ? targetUser.displayName : int.user.displayName;
-  const embed = u.embed().setTitle(`${name}'s avatar`).setImage(`attachment://image.${format}`);
-  return int.editReply({ embeds: [embed], files: [{ attachment: targetImage, name: `image.${format}` }] });
+  return sendImg(int, targetImage, format);
 }
 
 Module
@@ -149,14 +159,15 @@ Module
   id: u.sf.commands.slashAvatar,
   process: async (interaction) => {
     const file = interaction.options.getAttachment('file');
-    if (file && !interaction.options.getString('filter')) return interaction.reply({ content: "You need to specify a filter to apply if you're uploading a file", ephemeral: true });
+    const filter = interaction.options.getString("filter");
+    if (file && !filter) return interaction.reply({ content: "You need to specify a filter to apply if you're uploading a file", ephemeral: true });
     if (file && file.size > 4000000) return interaction.reply({ content: "That file is too big for me to process! It needs to be under 4MB.", ephemeral: true });
     await interaction.deferReply();
 
+    if (!filter) return avatar(interaction);
     const img = await targetImg(interaction);
-    if (!img && interaction.options.getString('filter')) return interaction.editReply({ content: readError }).then(u.clean);
-    if (!img) return avatar(interaction);
-    switch (interaction.options.getString('filter')) {
+    if (!img) return interaction.editReply({ content: readError }).then(u.clean);
+    switch (filter) {
       case "amongus": return amongus(interaction, img);
       case "deepfry": return deepfry(interaction, img);
       case "flex": return flex(interaction, img);
