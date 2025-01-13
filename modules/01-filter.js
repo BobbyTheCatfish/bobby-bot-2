@@ -50,7 +50,7 @@ async function processMessageLanguage(msg) {
   // LINK FILTER
   let link = null;
   /** @type {Discord.Collection<string, {tld: string | undefined, url: string}>} */
-  const matchedLinks = new u.Collection();
+  const matchedLinks = new Discord.Collection();
   let matchedWords = null;
   let gif = false;
   while ((link = hasLink.exec(msg.cleanContent)) !== null) {
