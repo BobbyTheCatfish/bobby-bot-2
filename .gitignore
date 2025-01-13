@@ -1,3 +1,11 @@
+# Configs
+config/*.json
+!config/*-example.json
+data/*.json
+!data/*-example.json
+# Top Secret
+modules/*-.js
+
 # Logs
 logs
 *.log

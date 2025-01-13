@@ -1,0 +1,15 @@
+{
+    "token": "",
+    "ownerId": "",
+    "applicationId": "",
+    "db": {
+        "model": "database/dbControllers.js",
+        "db": "mongodb://localhost:27017/bobbybot2"
+    },
+    "prefix": "!",
+    "events": [
+        "messageCreate",
+        "messageUpdate",
+        "interactionCreate"
+    ]
+}
