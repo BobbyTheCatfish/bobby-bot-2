@@ -179,12 +179,19 @@ function embed(data = {}) {
   return newEmbed;
 }
 
+/** @param {string} txt */
+function escapeText(txt) {
+  return txt.replace(/(\*|_|`|~|\\|\|)/g, '\\$1');
+}
+
 module.exports = {
   errorHandler,
   clean,
   noop,
   embed,
   rand,
+  escapeText,
+  moment: require("moment"),
   config,
   db: require("../database/dbControllers"),
   sf: require("../config/snowflakes.json")
