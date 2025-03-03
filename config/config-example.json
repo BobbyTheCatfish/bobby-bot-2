@@ -1,5 +1,13 @@
 {
     "webhooks": {
         "error": ""
-    }
+    },
+    "api": {
+        "youtube": "",
+        "twitch": {
+            "clientId": "",
+            "accessToken": ""
+        }
+    },
+    "color": "0x003b6f"
 }

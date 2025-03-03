@@ -9,7 +9,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "augurbot-ts": "^3.2.2",
+    "@googleapis/youtube": "^22.0.0",
+    "@twurple/api": "^7.2.1",
+    "@twurple/auth": "^7.2.1",
+    "augurbot-ts": "^3.3.2",
     "discord.js": "^14.17.3",
     "gifwrap": "^0.10.1",
     "jimp": "^0.22.10",
